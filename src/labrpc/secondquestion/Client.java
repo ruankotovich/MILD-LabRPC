@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -36,6 +35,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import labrpc.secondquestion.model.Zipper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -165,7 +165,7 @@ public class Client extends javax.swing.JFrame {
                     pListener.then("File received.");
 
                     fOutputStream.close();
-                    ZipUtils.unzip(file, FILE_RECEIVED_VIRTUAL, pListener);
+                    Zipper.unzip(file, FILE_RECEIVED_VIRTUAL, pListener);
 
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);

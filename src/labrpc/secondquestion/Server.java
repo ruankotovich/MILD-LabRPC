@@ -5,6 +5,7 @@
  */
 package labrpc.secondquestion;
 
+import labrpc.secondquestion.model.Zipper;
 import labrpc.secondquestion.model.MessageHandler;
 import labrpc.secondquestion.model.ProgressListener;
 import labrpc.secondquestion.model.PennyroyalPair;

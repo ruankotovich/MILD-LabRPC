@@ -1,6 +1,5 @@
-package labrpc.secondquestion;
+package labrpc.secondquestion.model;
 
-import labrpc.secondquestion.model.ProgressListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -11,38 +10,6 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-final class ZipUtils {
-
-    static void unzip(File fileZip, File baseDirectory, ProgressListener progress) throws FileNotFoundException, IOException {
-        byte[] buffer = new byte[4096];
-        progress.onStart("Extracting received file...");
-        ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip));
-        ZipEntry zipEntry = zis.getNextEntry();
-
-        int accumulator = 0;
-        while (zipEntry != null) {
-            String fileName = zipEntry.getName();
-            File newFile = new File(baseDirectory.getAbsolutePath() + "/" + fileName);
-            newFile.getParentFile().mkdirs();
-
-            FileOutputStream fos = new FileOutputStream(newFile);
-            int len;
-            while ((len = zis.read(buffer)) > 0) {
-
-                fos.write(buffer, 0, len);
-                accumulator += len;
-            }
-
-            progress.notifyProgress("File Extracted: " + zipEntry, (int) ((accumulator / (float) fileZip.length()) * (100)));
-            fos.close();
-            zipEntry = zis.getNextEntry();
-        }
-        progress.then("Finished extraction");
-
-        zis.closeEntry();
-    }
-}
 
 public class Zipper {
 
@@ -71,7 +38,7 @@ public class Zipper {
             this.progressListener = handler;
             handler.onStart("Ziping folder " + FANTASY_NAME + "...");
             this.generateFileList(new File(SOURCE_FOLDER));
-            this.zipIt(OUTPUT_ZIP_FILE);
+            this.zip(OUTPUT_ZIP_FILE);
             handler.then("Finished zip.");
         });
 
@@ -96,7 +63,36 @@ public class Zipper {
         this.progress = progress;
     }
 
-    private boolean zipIt(String zipFile) {
+    public static void unzip(File fileZip, File baseDirectory, ProgressListener progress) throws FileNotFoundException, IOException {
+        byte[] buffer = new byte[4096];
+        progress.onStart("Extracting received file...");
+        ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip));
+        ZipEntry zipEntry = zis.getNextEntry();
+
+        int accumulator = 0;
+        while (zipEntry != null) {
+            String fileName = zipEntry.getName();
+            File newFile = new File(baseDirectory.getAbsolutePath() + "/" + fileName);
+            newFile.getParentFile().mkdirs();
+
+            FileOutputStream fos = new FileOutputStream(newFile);
+            int len;
+            while ((len = zis.read(buffer)) > 0) {
+
+                fos.write(buffer, 0, len);
+                accumulator += len;
+            }
+
+            progress.notifyProgress("File Extracted: " + zipEntry, (int) ((accumulator / (float) fileZip.length()) * (100)));
+            fos.close();
+            zipEntry = zis.getNextEntry();
+        }
+        progress.then("Finished extraction");
+
+        zis.closeEntry();
+    }
+
+    private boolean zip(String zipFile) {
         boolean successfull = false;
         byte[] buffer = new byte[1024];
         String source = new File(SOURCE_FOLDER).getName();
