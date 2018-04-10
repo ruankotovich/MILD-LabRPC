@@ -11,11 +11,13 @@ import labrpc.secondquestion.model.ProgressListener;
 import labrpc.secondquestion.model.PennyroyalPair;
 import java.awt.Color;
 import java.beans.PropertyChangeEvent;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
@@ -55,8 +57,8 @@ public class Client extends javax.swing.JFrame {
     private final TreeMap<String, String> folderMap;
     private final TreeSet<String> choosenFileNames;
     private final String SERVER_VIRTUAL_DRIVE_NAME = "virtual://root";
-    private final String SERVER_ADDRESS = "localhost";
-    private final int SERVER_PORT = 6464;
+    private String SERVER_ADDRESS = "10.208.6.62";
+    private int SERVER_PORT = 6464;
     private final int BLOCK_SIZE = 4096;
     private final File FILE_RECEIVED_RAW = new File("received/raw");
     private final File FILE_RECEIVED_VIRTUAL = new File("received/virtual");
@@ -69,6 +71,28 @@ public class Client extends javax.swing.JFrame {
 
     public Client() {
         initComponents();
+        {
+            try {
+                BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("config.json")));
+                StringBuilder stringBuffer = new StringBuilder();
+                while (bufferedReader.ready()) {
+                    stringBuffer.append(bufferedReader.readLine());
+                }
+                JSONObject jsonObject = new JSONObject(stringBuffer.toString());
+
+                if (jsonObject.has("server")) {
+                    JSONObject serverConfig = jsonObject.getJSONObject("server");
+                    SERVER_ADDRESS = serverConfig.getString("ip");
+                    SERVER_PORT = serverConfig.getInt("port");
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid configuration file.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (FileNotFoundException ex) {
+                JOptionPane.showMessageDialog(null, "Configuration file not found, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Configuration file couldn't be readen, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
 
         FILE_RECEIVED_RAW.mkdirs();
         FILE_RECEIVED_VIRTUAL.mkdir();
@@ -137,14 +161,12 @@ public class Client extends javax.swing.JFrame {
 
             @Override
             public void onStart(Object obj) {
-                jTableQueue.setEnabled(false);
                 jProgressLabel.setText(obj.toString());
                 jFileNameHandler.setText("Precaching...");
             }
 
             @Override
             public void clear() {
-                jTableQueue.setEnabled(true);
                 jProgressBar1.setValue(0);
                 jFileNameHandler.setText("");
                 jProgressLabel.setText("");
@@ -186,7 +208,7 @@ public class Client extends javax.swing.JFrame {
     }
 
     private void listRemoteFolder() throws IOException {
-        ((AbstractFolder) root.getUserObject()).setCanonicalName("virtual@" + SERVER_ADDRESS + ":" + SERVER_PORT).setCanonicalPath(SERVER_VIRTUAL_DRIVE_NAME);
+        ((AbstractFolder) root.getUserObject()).setCanonicalName(SERVER_ADDRESS + ":" + SERVER_PORT).setCanonicalPath(SERVER_VIRTUAL_DRIVE_NAME);
         root.removeAllChildren();
         treeModel.nodeChanged(root);
 
@@ -197,21 +219,27 @@ public class Client extends javax.swing.JFrame {
     }
 
     private void downloadSelectedFiles() throws IOException {
-        jTableQueue.setEnabled(false);
         JSONObject requisition = new JSONObject();
         requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
 
         JSONArray jsonArray = new JSONArray();
 
-        for (int i = 0; i < jTableQueue.getRowCount(); ++i) {
-            String fileName = (String) tableModel.getValueAt(i, 0);
-            String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
+//        for (int i = 0; i < jTableQueue.getRowCount(); ++i) {
+        int i = jTableQueue.getSelectedRow();
 
-            JSONObject jsonObject = new JSONObject()
-                    .put("fileName", fileName)
-                    .put("fileOutputAlias", fileOutputAlias);
-            jsonArray.put(jsonObject);
+        if (i < 0) {
+            JOptionPane.showMessageDialog(null, "Select an item on the table", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
         }
+        
+        String fileName = (String) tableModel.getValueAt(i, 0);
+        String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
+
+        JSONObject jsonObjectInner = new JSONObject()
+                .put("fileName", fileName)
+                .put("fileOutputAlias", fileOutputAlias);
+        jsonArray.put(jsonObjectInner);
+//        }
 
         requisition.put("parameters", jsonArray);
         dataOutputStream.writeUTF(requisition.toString());
@@ -266,7 +294,6 @@ public class Client extends javax.swing.JFrame {
             }
 
             jTableQueue.clearSelection();
-            jTableQueue.setEnabled(true);
 
         }).start();
 

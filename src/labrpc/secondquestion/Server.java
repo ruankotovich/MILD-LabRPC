@@ -168,7 +168,7 @@ public class Server {
                                             threadPool.add(new PennyroyalPair<>(new Zipper(fileName.replace(SERVER_VIRTUAL_DRIVE_NAME, SERVER_VIRTUAL_DRIVE_LOCATION), fileName, outputFile.getAbsolutePath()).zip(progressListener), outputFile));
                                         }
 
-                                        new Thread(() -> {
+                                        Thread currentThread = new Thread(() -> {
 
                                             while (!threadPool.isEmpty()) {
                                                 try {
@@ -212,7 +212,10 @@ public class Server {
                                             } catch (IOException | InterruptedException ex) {
                                                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                                             }
-                                        }).start();
+                                        });
+                                        
+                                        currentThread.start();
+                                        currentThread.join();
 
                                     }
                                     break;
@@ -257,6 +260,8 @@ public class Server {
 
             } catch (IOException ex) {
                 System.err.println("Socket went rupted with client " + chainedSocket.getRemoteSocketAddress().toString());
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }).start();
     }
