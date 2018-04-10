@@ -157,65 +157,56 @@ public class Server {
 
                                     case REQUEST_DOWNLOAD: {
 
-                                        Queue<PennyroyalPair<Thread, File>> threadPool = new LinkedList<>();
                                         System.out.println("\t --- Download request detected from client " + chainedSocket.getRemoteSocketAddress().toString());
-                                        for (int i = 0; i < parameters.length(); ++i) {
-                                            JSONObject fileObject = parameters.getJSONObject(i);
-                                            String fileName = fileObject.getString("fileName");
-                                            String fileOutputAlias = fileObject.getString("fileOutputAlias");
-                                            File outputFile = new File(fileOutputAlias + (fileOutputAlias.endsWith(".zip") ? "" : ".zip"));
-                                            System.out.println("\t --- Zipping file " + outputFile.getAbsolutePath());
-                                            threadPool.add(new PennyroyalPair<>(new Zipper(fileName.replace(SERVER_VIRTUAL_DRIVE_NAME, SERVER_VIRTUAL_DRIVE_LOCATION), fileName, outputFile.getAbsolutePath()).zip(progressListener), outputFile));
+
+                                        JSONObject fileObject = parameters.getJSONObject(0);
+                                        String fileName = fileObject.getString("fileName");
+                                        String fileOutputAlias = fileObject.getString("fileOutputAlias");
+                                        File outputFile = new File(fileOutputAlias + (fileOutputAlias.endsWith(".zip") ? "" : ".zip"));
+
+                                        System.out.println("\t --- Zipping file " + outputFile.getAbsolutePath());
+
+                                        try {
+
+                                            Thread zipperThread = new Zipper(fileName.replace(SERVER_VIRTUAL_DRIVE_NAME, SERVER_VIRTUAL_DRIVE_LOCATION), fileName, outputFile.getAbsolutePath()).zip(progressListener);
+                                            zipperThread.start();
+                                            zipperThread.join();
+
+                                            long length = outputFile.length();
+
+                                            System.out.println("\t --- Sending file " + outputFile.getName() + "of " + outputFile.length() + "b to client" + chainedSocket.getRemoteSocketAddress().toString());
+                                            try (FileInputStream fileInputStream = new FileInputStream(outputFile)) {
+                                                progressListener.dmaSend(outputFile.getName(), length);
+
+                                                byte[] buffer = new byte[BLOCK_SIZE];
+
+                                                for (int curLength, accumulator = 0; accumulator < length; outputStream.write(buffer, 0, curLength)) {
+                                                    System.out.println("\tReading part [" + accumulator + "," + length + "]");
+                                                    accumulator += (curLength = fileInputStream.read(buffer));
+                                                    System.out.println("\tSending part [" + accumulator + "," + length + "]");
+                                                }
+
+                                                System.out.println("\t --- File sent to client " + chainedSocket.getRemoteSocketAddress().toString());
+                                            }
+
+                                            outputFile.delete();
+
+                                        } catch (InterruptedException ex) {
+                                            System.err.println("\t --- Aborted thread");
+                                        } catch (IOException ex) {
+                                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                                         }
 
-                                        Thread currentThread = new Thread(() -> {
+                                        try {
+                                            Thread.sleep(1000);
+                                            progressListener.clear();
+                                            outputStream.writeUTF(new JSONObject()
+                                                    .put("command", MessageHandler.ConnectionMessage.OVER.toString())
+                                                    .toString());
 
-                                            while (!threadPool.isEmpty()) {
-                                                try {
-                                                    PennyroyalPair<Thread, File> threadItem = threadPool.poll();
-                                                    threadItem.first.start();
-                                                    threadItem.first.join();
-
-                                                    long length = threadItem.second.length();
-
-                                                    System.out.println("\t --- Sending file " + threadItem.second.getName() + "of " + threadItem.second.length() + "b to client" + chainedSocket.getRemoteSocketAddress().toString());
-                                                    try (FileInputStream fileInputStream = new FileInputStream(threadItem.second)) {
-                                                        progressListener.dmaSend(threadItem.second.getName(), length);
-
-                                                        byte[] buffer = new byte[BLOCK_SIZE];
-
-                                                        for (int curLength, accumulator = 0; accumulator < length; outputStream.write(buffer, 0, curLength)) {
-                                                            System.out.println("\tReading part [" + accumulator + "," + length + "]");
-                                                            accumulator += (curLength = fileInputStream.read(buffer));
-                                                            System.out.println("\tSending part [" + accumulator + "," + length + "]");
-                                                        }
-
-                                                        System.out.println("\t --- File sent to client " + chainedSocket.getRemoteSocketAddress().toString());
-                                                    }
-
-                                                    threadItem.second.delete();
-
-                                                } catch (InterruptedException ex) {
-                                                    System.err.println("\t --- Aborted thread");
-                                                } catch (IOException ex) {
-                                                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                                                }
-                                            }
-
-                                            try {
-                                                Thread.sleep(1000);
-                                                progressListener.clear();
-                                                outputStream.writeUTF(new JSONObject()
-                                                        .put("command", MessageHandler.ConnectionMessage.OVER.toString())
-                                                        .toString());
-
-                                            } catch (IOException | InterruptedException ex) {
-                                                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                                            }
-                                        });
-                                        
-                                        currentThread.start();
-                                        currentThread.join();
+                                        } catch (IOException | InterruptedException ex) {
+                                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
 
                                     }
                                     break;
@@ -260,8 +251,6 @@ public class Server {
 
             } catch (IOException ex) {
                 System.err.println("Socket went rupted with client " + chainedSocket.getRemoteSocketAddress().toString());
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
             }
         }).start();
     }

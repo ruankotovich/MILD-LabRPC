@@ -219,6 +219,12 @@ public class Client extends javax.swing.JFrame {
     }
 
     private void downloadSelectedFiles() throws IOException {
+        jBdownload.setEnabled(false);
+        jBadd.setEnabled(false);
+        jBremove.setEnabled(false);
+        jBforceRefresh.setEnabled(false);
+        jBtoggleAutoRefresh.setEnabled(false);
+
         JSONObject requisition = new JSONObject();
         requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
 
@@ -229,9 +235,14 @@ public class Client extends javax.swing.JFrame {
 
         if (i < 0) {
             JOptionPane.showMessageDialog(null, "Select an item on the table", "Erro", JOptionPane.ERROR_MESSAGE);
+            jBdownload.setEnabled(true);
+            jBadd.setEnabled(true);
+            jBremove.setEnabled(true);
+            jBforceRefresh.setEnabled(true);
+            jBtoggleAutoRefresh.setEnabled(true);
             return;
         }
-        
+
         String fileName = (String) tableModel.getValueAt(i, 0);
         String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
 
@@ -292,7 +303,9 @@ public class Client extends javax.swing.JFrame {
             } catch (IOException ex) {
                 Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            jBdownload.setEnabled(true);
+            jBadd.setEnabled(true);
+            jBremove.setEnabled(true);
             jTableQueue.clearSelection();
 
         }).start();
@@ -405,10 +418,10 @@ public class Client extends javax.swing.JFrame {
         jPanel3 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTableQueue = new javax.swing.JTable();
-        jButton3 = new javax.swing.JButton();
+        jBdownload = new javax.swing.JButton();
         jPanel4 = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        jBadd = new javax.swing.JButton();
+        jBremove = new javax.swing.JButton();
         jCbDontAsk = new javax.swing.JCheckBox();
         jPanel5 = new javax.swing.JPanel();
         jBtoggleAutoRefresh = new javax.swing.JToggleButton();
@@ -493,13 +506,13 @@ public class Client extends javax.swing.JFrame {
             jTableQueue.getColumnModel().getColumn(1).setPreferredWidth(100);
         }
 
-        jButton3.setBackground(new java.awt.Color(0, 185, 59));
-        jButton3.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
-        jButton3.setText("Download");
-        jButton3.setFocusable(false);
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        jBdownload.setBackground(new java.awt.Color(0, 185, 59));
+        jBdownload.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
+        jBdownload.setText("Download");
+        jBdownload.setFocusable(false);
+        jBdownload.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                jBdownloadActionPerformed(evt);
             }
         });
 
@@ -508,44 +521,45 @@ public class Client extends javax.swing.JFrame {
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 428, Short.MAX_VALUE)
-            .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jBdownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 187, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jBdownload, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jPanel4.setBackground(new java.awt.Color(254, 254, 254));
         jPanel4.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jPanel4.setLayout(new java.awt.GridLayout(0, 1));
 
-        jButton1.setBackground(new java.awt.Color(0, 185, 59));
-        jButton1.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
-        jButton1.setText("Add");
-        jButton1.setFocusable(false);
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        jBadd.setBackground(new java.awt.Color(0, 185, 59));
+        jBadd.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
+        jBadd.setText("Add");
+        jBadd.setFocusable(false);
+        jBadd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                jBaddActionPerformed(evt);
             }
         });
-        jPanel4.add(jButton1);
+        jPanel4.add(jBadd);
 
-        jButton2.setBackground(new java.awt.Color(238, 253, 83));
-        jButton2.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
-        jButton2.setText("Remove");
-        jButton2.setFocusable(false);
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        jBremove.setBackground(new java.awt.Color(238, 253, 83));
+        jBremove.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
+        jBremove.setText("Remove");
+        jBremove.setFocusable(false);
+        jBremove.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                jBremoveActionPerformed(evt);
             }
         });
-        jPanel4.add(jButton2);
+        jPanel4.add(jBremove);
 
         jCbDontAsk.setFont(new java.awt.Font("Noto Sans", 1, 12)); // NOI18N
         jCbDontAsk.setText("Don't ask  to remove");
+        jCbDontAsk.setFocusable(false);
         jCbDontAsk.setPreferredSize(new java.awt.Dimension(150, 24));
         jPanel4.add(jCbDontAsk);
 
@@ -616,21 +630,21 @@ public class Client extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void jBaddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBaddActionPerformed
         addFiles();
-    }//GEN-LAST:event_jButton1ActionPerformed
+    }//GEN-LAST:event_jBaddActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void jBremoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBremoveActionPerformed
         erodeFiles();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_jBremoveActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void jBdownloadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBdownloadActionPerformed
         try {
             downloadSelectedFiles();
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }//GEN-LAST:event_jButton3ActionPerformed
+    }//GEN-LAST:event_jBdownloadActionPerformed
 
     private void jBtoggleAutoRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtoggleAutoRefreshActionPerformed
         if (jBtoggleAutoRefresh.isSelected()) {
@@ -691,11 +705,11 @@ public class Client extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jBadd;
+    private javax.swing.JButton jBdownload;
     private javax.swing.JButton jBforceRefresh;
+    private javax.swing.JButton jBremove;
     private javax.swing.JToggleButton jBtoggleAutoRefresh;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
     private javax.swing.JCheckBox jCbDontAsk;
     private javax.swing.JLabel jFileNameHandler;
     private javax.swing.JPanel jPanel1;
