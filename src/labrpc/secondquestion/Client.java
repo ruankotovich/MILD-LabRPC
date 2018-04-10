@@ -224,24 +224,31 @@ public class Client extends javax.swing.JFrame {
         jBremove.setEnabled(false);
         jBforceRefresh.setEnabled(false);
         jBtoggleAutoRefresh.setEnabled(false);
+        jTableQueue.setEnabled(false);
 
         JSONObject requisition = new JSONObject();
         requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
 
         JSONArray jsonArray = new JSONArray();
-
-//        for (int i = 0; i < jTableQueue.getRowCount(); ++i) {
+        
         int i = jTableQueue.getSelectedRow();
 
         if (i < 0) {
-            JOptionPane.showMessageDialog(null, "Select an item on the table", "Erro", JOptionPane.ERROR_MESSAGE);
-            jBdownload.setEnabled(true);
-            jBadd.setEnabled(true);
-            jBremove.setEnabled(true);
-            jBforceRefresh.setEnabled(true);
-            jBtoggleAutoRefresh.setEnabled(true);
-            return;
+            if (jTableQueue.getRowCount() > 0) {
+                i = 0;
+            } else {
+                JOptionPane.showMessageDialog(null, "There's nothing to download yet.", "Erro", JOptionPane.ERROR_MESSAGE);
+                jBdownload.setEnabled(true);
+                jBadd.setEnabled(true);
+                jBremove.setEnabled(true);
+                jBforceRefresh.setEnabled(true);
+                jBtoggleAutoRefresh.setEnabled(true);
+                jTableQueue.setEnabled(true);
+                return;
+            }
         }
+
+        final int toRemove = i;
 
         String fileName = (String) tableModel.getValueAt(i, 0);
         String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
@@ -250,7 +257,6 @@ public class Client extends javax.swing.JFrame {
                 .put("fileName", fileName)
                 .put("fileOutputAlias", fileOutputAlias);
         jsonArray.put(jsonObjectInner);
-//        }
 
         requisition.put("parameters", jsonArray);
         dataOutputStream.writeUTF(requisition.toString());
@@ -303,11 +309,16 @@ public class Client extends javax.swing.JFrame {
             } catch (IOException ex) {
                 Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             }
+
             jBdownload.setEnabled(true);
             jBadd.setEnabled(true);
             jBremove.setEnabled(true);
+            jBforceRefresh.setEnabled(true);
+            jBtoggleAutoRefresh.setEnabled(true);
+            jTableQueue.setEnabled(true);
+            tableModel.removeRow(toRemove);
             jTableQueue.clearSelection();
-
+            
         }).start();
 
     }
@@ -437,6 +448,7 @@ public class Client extends javax.swing.JFrame {
 
         jPanel1.setBackground(new java.awt.Color(254, 254, 254));
 
+        jTree1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jScrollPane1.setViewportView(jTree1);
 
         jPanel2.setBackground(new java.awt.Color(254, 254, 254));
@@ -457,7 +469,7 @@ public class Client extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jProgressLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jFileNameHandler, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jFileNameHandler))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -498,6 +510,7 @@ public class Client extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
+        jTableQueue.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jScrollPane2.setViewportView(jTableQueue);
         if (jTableQueue.getColumnModel().getColumnCount() > 0) {
             jTableQueue.getColumnModel().getColumn(0).setResizable(false);
@@ -508,8 +521,12 @@ public class Client extends javax.swing.JFrame {
 
         jBdownload.setBackground(new java.awt.Color(0, 185, 59));
         jBdownload.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
+        jBdownload.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/001-download-to-storage-drive.png"))); // NOI18N
         jBdownload.setText("Download");
+        jBdownload.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jBdownload.setFocusable(false);
+        jBdownload.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        jBdownload.setIconTextGap(10);
         jBdownload.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jBdownloadActionPerformed(evt);
@@ -520,7 +537,7 @@ public class Client extends javax.swing.JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 428, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
             .addComponent(jBdownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
@@ -535,10 +552,14 @@ public class Client extends javax.swing.JFrame {
         jPanel4.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jPanel4.setLayout(new java.awt.GridLayout(0, 1));
 
-        jBadd.setBackground(new java.awt.Color(0, 185, 59));
+        jBadd.setBackground(new java.awt.Color(132, 254, 171));
         jBadd.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
+        jBadd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/003-plus.png"))); // NOI18N
         jBadd.setText("Add");
+        jBadd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jBadd.setFocusable(false);
+        jBadd.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jBadd.setIconTextGap(10);
         jBadd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jBaddActionPerformed(evt);
@@ -546,10 +567,14 @@ public class Client extends javax.swing.JFrame {
         });
         jPanel4.add(jBadd);
 
-        jBremove.setBackground(new java.awt.Color(238, 253, 83));
+        jBremove.setBackground(new java.awt.Color(255, 123, 129));
         jBremove.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
+        jBremove.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/002-delete.png"))); // NOI18N
         jBremove.setText("Remove");
+        jBremove.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jBremove.setFocusable(false);
+        jBremove.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jBremove.setIconTextGap(10);
         jBremove.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jBremoveActionPerformed(evt);
@@ -566,6 +591,7 @@ public class Client extends javax.swing.JFrame {
         jPanel5.setOpaque(false);
         jPanel5.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
+        jBtoggleAutoRefresh.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jBtoggleAutoRefresh.setFocusable(false);
         jBtoggleAutoRefresh.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -575,6 +601,7 @@ public class Client extends javax.swing.JFrame {
         jPanel5.add(jBtoggleAutoRefresh, new org.netbeans.lib.awtextra.AbsoluteConstraints(132, 0, -1, 62));
 
         jBforceRefresh.setText("Refresh");
+        jBforceRefresh.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jBforceRefresh.setFocusable(false);
         jBforceRefresh.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
