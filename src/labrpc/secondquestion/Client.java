@@ -73,7 +73,7 @@ public class Client extends javax.swing.JFrame {
         initComponents();
         {
             try {
-                BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("config.json")));
+                BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("client_config.json")));
                 StringBuilder stringBuffer = new StringBuilder();
                 while (bufferedReader.ready()) {
                     stringBuffer.append(bufferedReader.readLine());
