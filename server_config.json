@@ -1,0 +1,7 @@
+{
+    "config": {
+        "port": 6464,
+        "drive_location": "/home/dmitry/Tests",
+        "drive_name": "virtual://root"
+    }
+}

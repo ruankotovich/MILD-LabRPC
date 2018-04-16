@@ -5,6 +5,7 @@
  */
 package labrpc.secondquestion;
 
+import java.io.BufferedReader;
 import labrpc.secondquestion.model.Zipper;
 import labrpc.secondquestion.model.MessageHandler;
 import labrpc.secondquestion.model.ProgressListener;
@@ -13,6 +14,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -22,6 +25,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -31,17 +35,23 @@ import org.json.JSONObject;
  */
 public class Server {
 
+    public static final String DEFAULT_DRIVE_LOCATION = "/home/dmitry/Tests";
+    public static final String DEFAULT_DRIVE_NAME = "virtual://root";
+    public static final int DEFAULT_PORT = 6464;
+    
     private volatile ServerSocket abstractSocket;
     private final Thread eventLoop;
     private boolean serverOpen = false;
     private final String SERVER_VIRTUAL_DRIVE_LOCATION;
     private final String SERVER_VIRTUAL_DRIVE_NAME;
+    private final int SERVER_PORT;
     private final int BLOCK_SIZE = 4096;
 
-    public Server(String pSERVER_VIRTUAL_DRIVE_LOCATION, String pSERVER_VIRTUAL_DRIVE_NAME) {
+    public Server(String pSERVER_VIRTUAL_DRIVE_LOCATION, String pSERVER_VIRTUAL_DRIVE_NAME, int pSERVER_PORT) {
 
         this.SERVER_VIRTUAL_DRIVE_LOCATION = pSERVER_VIRTUAL_DRIVE_LOCATION;
         this.SERVER_VIRTUAL_DRIVE_NAME = pSERVER_VIRTUAL_DRIVE_NAME;
+        this.SERVER_PORT = pSERVER_PORT;
 
         eventLoop = new Thread(() -> {
             while (isServerOpen()) {
@@ -296,7 +306,7 @@ public class Server {
     public synchronized void start() {
         if (eventLoop != null && !eventLoop.isAlive()) {
             try {
-                abstractSocket = new ServerSocket(6464);
+                abstractSocket = new ServerSocket(this.SERVER_PORT);
                 System.out.println("Server running on port " + abstractSocket.getLocalPort());
 
             } catch (IOException ex) {
@@ -327,6 +337,33 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        new Server("/home/dmitry/Tests", "virtual://root").start();
+        String driveLocation = DEFAULT_DRIVE_LOCATION;
+        String driveName = DEFAULT_DRIVE_NAME;
+        int port = DEFAULT_PORT;
+        
+        try {
+                BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("server_config.json")));
+                StringBuilder stringBuffer = new StringBuilder();
+                while (bufferedReader.ready()) {
+                    stringBuffer.append(bufferedReader.readLine());
+                }
+                JSONObject jsonObject = new JSONObject(stringBuffer.toString());
+
+                if (jsonObject.has("config")) {
+                    JSONObject serverConfig = jsonObject.getJSONObject("config");
+                    
+                    driveLocation = serverConfig.getString("drive_location");
+                    driveName = serverConfig.getString("drive_name");
+                    port = serverConfig.getInt("port");
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid configuration file.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (FileNotFoundException ex) {
+                JOptionPane.showMessageDialog(null, "Configuration file not found, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Configuration file couldn't be read, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        
+        new Server(driveLocation, driveName, port).start();
     }
 }
