@@ -37,6 +37,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import labrpc.secondquestion.model.DMAHandle;
+import labrpc.secondquestion.model.SocketHandle;
 import labrpc.secondquestion.model.Zipper;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -52,7 +54,7 @@ public class Client extends javax.swing.JFrame {
 
     private final DefaultTreeModel treeModel;
     private final DefaultTreeCellRenderer renderer;
-    private final ProgressListener pListener;
+//    private final ProgressListener pListener;
     private final DefaultTableModel tableModel;
     private final TreeMap<String, String> folderMap;
     private final TreeSet<String> choosenFileNames;
@@ -65,9 +67,7 @@ public class Client extends javax.swing.JFrame {
     private final Color AUTO_REFRESH_BACKGROUND_COLOR;
 
     private String beforeEditValue;
-    private Socket socket;
-    private DataInputStream dataInputStream;
-    private DataOutputStream dataOutputStream;
+    private SocketHandle socketHandle;
 
     public Client() {
         initComponents();
@@ -98,9 +98,7 @@ public class Client extends javax.swing.JFrame {
         FILE_RECEIVED_VIRTUAL.mkdir();
 
         try {
-            this.socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
-            this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            this.dataInputStream = new DataInputStream(socket.getInputStream());
+            this.socketHandle = new SocketHandle(SERVER_ADDRESS, SERVER_PORT);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(null, "Conection Refused!\n" + ex.toString() + "\n\nMake sure the server is open", "Erro", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
@@ -146,57 +144,56 @@ public class Client extends javax.swing.JFrame {
             }
         });
 
-        pListener = new ProgressListener() {
-            @Override
-            public void notifyProgress(Object obj, int amount) {
-                jProgressBar1.setValue(amount);
-                jFileNameHandler.setText(obj.toString());
-            }
-
-            @Override
-            public void then(Object obj) {
-                jProgressLabel.setText(obj.toString());
-                jFileNameHandler.setText("");
-            }
-
-            @Override
-            public void onStart(Object obj) {
-                jProgressLabel.setText(obj.toString());
-                jFileNameHandler.setText("Precaching...");
-            }
-
-            @Override
-            public void clear() {
-                jProgressBar1.setValue(0);
-                jFileNameHandler.setText("");
-                jProgressLabel.setText("");
-            }
-
-            @Override
-            public void dmaSend(Object obj, long length) {
-                try {
-                    File file = new File(FILE_RECEIVED_RAW.getAbsolutePath() + "/" + obj.toString());
-                    FileOutputStream fOutputStream = new FileOutputStream(file.getAbsoluteFile());
-                    byte[] buffer = new byte[BLOCK_SIZE];
-                    pListener.onStart("Receiving file...");
-                    for (int curLength, accumulator = 0; accumulator < length; fOutputStream.write(buffer, 0, curLength)) {
-                        pListener.notifyProgress("Receiving parts from " + accumulator + " to " + length, (int) ((accumulator / (float) length) * 100));
-                        accumulator += (curLength = dataInputStream.read(buffer));
-                    }
-
-                    pListener.then("File received.");
-
-                    fOutputStream.close();
-                    Zipper.unzip(file, FILE_RECEIVED_VIRTUAL, pListener);
-
-                } catch (FileNotFoundException ex) {
-                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        };
-
+//        pListener = new ProgressListener() {
+//            @Override
+//            public void notifyProgress(Object obj, int amount) {
+//                jProgressBar1.setValue(amount);
+//                jFileNameHandler.setText(obj.toString());
+//            }
+//
+//            @Override
+//            public void then(Object obj) {
+//                jProgressLabel.setText(obj.toString());
+//                jFileNameHandler.setText("");
+//            }
+//
+//            @Override
+//            public void onStart(Object obj) {
+//                jProgressLabel.setText(obj.toString());
+//                jFileNameHandler.setText("Precaching...");
+//            }
+//
+//            @Override
+//            public void clear() {
+//                jProgressBar1.setValue(0);
+//                jFileNameHandler.setText("");
+//                jProgressLabel.setText("");
+//            }
+//
+//            @Override
+//            public void dmaSend(Object obj, long length) {
+//                try {
+//                    File file = new File(FILE_RECEIVED_RAW.getAbsolutePath() + "/" + obj.toString());
+//                    FileOutputStream fOutputStream = new FileOutputStream(file.getAbsoluteFile());
+//                    byte[] buffer = new byte[BLOCK_SIZE];
+//                    pListener.onStart("Receiving file...");
+//                    for (int curLength, accumulator = 0; accumulator < length; fOutputStream.write(buffer, 0, curLength)) {
+//                        pListener.notifyProgress("Receiving parts from " + accumulator + " to " + length, (int) ((accumulator / (float) length) * 100));
+//                        accumulator += (curLength = socketHandle.getDataInputStream().read(buffer));
+//                    }
+//
+//                    pListener.then("File received.");
+//
+//                    fOutputStream.close();
+//                    Zipper.unzip(file, FILE_RECEIVED_VIRTUAL, pListener);
+//
+//                } catch (FileNotFoundException ex) {
+//                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+//                } catch (IOException ex) {
+//                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//            }
+//        };
         this.setLocationRelativeTo(null);
 
         try {
@@ -212,12 +209,115 @@ public class Client extends javax.swing.JFrame {
         root.removeAllChildren();
         treeModel.nodeChanged(root);
 
-        dataOutputStream.writeUTF(new JSONObject().put("command", MessageHandler.ConnectionMessage.REQUEST_LIST.toString()).toString());
-        populateTree(dataInputStream.readUTF());
+        socketHandle.getDataOutputStream().writeUTF(new JSONObject().put("command", MessageHandler.ConnectionMessage.REQUEST_LIST.toString()).toString());
+        populateTree(socketHandle.getDataInputStream().readUTF());
 
         treeModel.reload();
     }
 
+    int unlockCount = 0;
+
+    private synchronized void tryUnlock() {
+        --unlockCount;
+        if (unlockCount <= 0) {
+            jBdownload.setEnabled(true);
+            jBadd.setEnabled(true);
+            jBremove.setEnabled(true);
+            jBforceRefresh.setEnabled(true);
+            jBtoggleAutoRefresh.setEnabled(true);
+            tableModel.setRowCount(0);
+        }
+    }
+
+    private void yieldDownloads() {
+        jBdownload.setEnabled(false);
+        jBadd.setEnabled(false);
+        jBremove.setEnabled(false);
+        jBforceRefresh.setEnabled(false);
+        jBtoggleAutoRefresh.setEnabled(false);
+        unlockCount = tableModel.getRowCount();
+
+        for (int i = 0; i < tableModel.getRowCount(); ++i) {
+            try {
+
+                DMAHandle dmaHandle = new DMAHandle(new SocketHandle(SERVER_ADDRESS, SERVER_PORT), i, tableModel, FILE_RECEIVED_RAW, FILE_RECEIVED_VIRTUAL, BLOCK_SIZE);
+                JSONObject requisition = new JSONObject();
+                requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
+
+                JSONArray jsonArray = new JSONArray();
+
+                String fileName = (String) tableModel.getValueAt(i, 0);
+                String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
+
+                JSONObject jsonObjectInner = new JSONObject()
+                        .put("fileName", fileName)
+                        .put("fileOutputAlias", fileOutputAlias);
+                jsonArray.put(jsonObjectInner);
+
+                requisition.put("parameters", jsonArray);
+
+                dmaHandle.getSocket().getDataOutputStream().writeUTF(requisition.toString());
+
+                new Thread(() -> {
+
+                    try {
+                        String command;
+                        do {
+
+                            JSONObject jsonObject = new JSONObject(dmaHandle.getSocket().getDataInputStream().readUTF());
+
+                            if (jsonObject.has("command") && jsonObject.has("parameters")) {
+                                JSONArray parameters = jsonObject.getJSONArray("parameters");
+                                command = jsonObject.getString("command");
+
+                                if (parameters.length() > 0) {
+                                    switch (parameters.getString(0)) {
+                                        case "notifyProgress": {
+                                            dmaHandle.getListener().notifyProgress(parameters.getString(1), parameters.getInt(2));
+                                        }
+                                        break;
+                                        case "then": {
+                                            dmaHandle.getListener().then(parameters.getString(1));
+                                        }
+                                        break;
+                                        case "onStart": {
+                                            dmaHandle.getListener().onStart(parameters.getString(1));
+                                        }
+                                        break;
+
+                                        case "clear": {
+                                            dmaHandle.getListener().clear();
+                                        }
+                                        break;
+
+                                        case "dmaSend": {
+                                            dmaHandle.getListener().dmaSend(parameters.getString(1), parameters.getLong(2));
+                                        }
+                                        break;
+                                    }
+                                }
+
+                            } else {
+                                break;
+                            }
+
+                        } while (command == null ? MessageHandler.ConnectionMessage.OVER.toString() != null : !command.equals(MessageHandler.ConnectionMessage.OVER.toString()));
+
+                    } catch (IOException ex) {
+                        Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
+                    tryUnlock();
+                }).start();
+
+//                socketHandle.getDataOutputStream().writeUTF(requisition.toString());
+            } catch (IOException ex) {
+                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    /*
     private void downloadSelectedFiles() throws IOException {
         jBdownload.setEnabled(false);
         jBadd.setEnabled(false);
@@ -230,7 +330,7 @@ public class Client extends javax.swing.JFrame {
         requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
 
         JSONArray jsonArray = new JSONArray();
-        
+
         int i = jTableQueue.getSelectedRow();
 
         if (i < 0) {
@@ -259,7 +359,7 @@ public class Client extends javax.swing.JFrame {
         jsonArray.put(jsonObjectInner);
 
         requisition.put("parameters", jsonArray);
-        dataOutputStream.writeUTF(requisition.toString());
+        socketHandle.getDataOutputStream().writeUTF(requisition.toString());
 
         new Thread(() -> {
 
@@ -267,7 +367,7 @@ public class Client extends javax.swing.JFrame {
                 String command;
                 do {
 
-                    JSONObject jsonObject = new JSONObject(dataInputStream.readUTF());
+                    JSONObject jsonObject = new JSONObject(socketHandle.getDataInputStream().readUTF());
 
                     if (jsonObject.has("command") && jsonObject.has("parameters")) {
                         JSONArray parameters = jsonObject.getJSONArray("parameters");
@@ -318,11 +418,11 @@ public class Client extends javax.swing.JFrame {
             jTableQueue.setEnabled(true);
             tableModel.removeRow(toRemove);
             jTableQueue.clearSelection();
-            
+
         }).start();
 
     }
-
+     */
     private void addFiles() {
         TreePath paths[] = jTree1.getSelectionModel().getSelectionPaths();
 
@@ -422,10 +522,6 @@ public class Client extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTree1 = new JTree(root = new DefaultMutableTreeNode(new AbstractFolder("virtual://root","virtual")));
-        jPanel2 = new javax.swing.JPanel();
-        jProgressBar1 = new javax.swing.JProgressBar();
-        jProgressLabel = new javax.swing.JLabel();
-        jFileNameHandler = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTableQueue = new javax.swing.JTable();
@@ -451,39 +547,6 @@ public class Client extends javax.swing.JFrame {
         jTree1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jScrollPane1.setViewportView(jTree1);
 
-        jPanel2.setBackground(new java.awt.Color(254, 254, 254));
-        jPanel2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-
-        jProgressBar1.setString("");
-
-        jProgressLabel.setFont(new java.awt.Font("Noto Sans", 1, 12)); // NOI18N
-
-        jFileNameHandler.setFont(new java.awt.Font("Noto Sans", 1, 12)); // NOI18N
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jProgressLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jFileNameHandler))
-                .addContainerGap())
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jProgressLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jFileNameHandler, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
-        );
-
         jPanel3.setBackground(new java.awt.Color(254, 254, 254));
         jPanel3.setBorder(javax.swing.BorderFactory.createEtchedBorder());
 
@@ -492,14 +555,14 @@ public class Client extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Folder", "Output File Name"
+                "Folder", "Output File Name", "Status"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.String.class, java.lang.String.class
+                java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, true
+                false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -514,15 +577,17 @@ public class Client extends javax.swing.JFrame {
         jScrollPane2.setViewportView(jTableQueue);
         if (jTableQueue.getColumnModel().getColumnCount() > 0) {
             jTableQueue.getColumnModel().getColumn(0).setResizable(false);
-            jTableQueue.getColumnModel().getColumn(0).setPreferredWidth(300);
+            jTableQueue.getColumnModel().getColumn(0).setPreferredWidth(200);
             jTableQueue.getColumnModel().getColumn(1).setResizable(false);
             jTableQueue.getColumnModel().getColumn(1).setPreferredWidth(100);
+            jTableQueue.getColumnModel().getColumn(2).setResizable(false);
+            jTableQueue.getColumnModel().getColumn(2).setPreferredWidth(300);
         }
 
         jBdownload.setBackground(new java.awt.Color(0, 185, 59));
         jBdownload.setFont(new java.awt.Font("Noto Sans", 1, 14)); // NOI18N
         jBdownload.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/001-download-to-storage-drive.png"))); // NOI18N
-        jBdownload.setText("Download");
+        jBdownload.setText("Download All");
         jBdownload.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jBdownload.setFocusable(false);
         jBdownload.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -537,13 +602,13 @@ public class Client extends javax.swing.JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 777, Short.MAX_VALUE)
             .addComponent(jBdownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 187, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jBdownload, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -620,12 +685,9 @@ public class Client extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 299, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -635,11 +697,9 @@ public class Client extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 473, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, 253, Short.MAX_VALUE)
-                            .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addGap(18, 18, 18)
-                        .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 253, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -658,7 +718,13 @@ public class Client extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jBaddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBaddActionPerformed
-        addFiles();
+        if (jTableQueue.getRowCount() < 8) {
+            if (tableModel.getRowCount() > 0) {
+                addFiles();
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Isn't possible to keep more than eight connections.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jBaddActionPerformed
 
     private void jBremoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBremoveActionPerformed
@@ -666,11 +732,7 @@ public class Client extends javax.swing.JFrame {
     }//GEN-LAST:event_jBremoveActionPerformed
 
     private void jBdownloadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBdownloadActionPerformed
-        try {
-            downloadSelectedFiles();
-        } catch (IOException ex) {
-            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        yieldDownloads();
     }//GEN-LAST:event_jBdownloadActionPerformed
 
     private void jBtoggleAutoRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtoggleAutoRefreshActionPerformed
@@ -696,7 +758,7 @@ public class Client extends javax.swing.JFrame {
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         try {
-            dataOutputStream.writeUTF(new JSONObject().put("command", MessageHandler.ConnectionMessage.CLOSE_CONNECTION.toString()).toString());
+            socketHandle.getDataOutputStream().writeUTF(new JSONObject().put("command", MessageHandler.ConnectionMessage.CLOSE_CONNECTION.toString()).toString());
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -738,14 +800,10 @@ public class Client extends javax.swing.JFrame {
     private javax.swing.JButton jBremove;
     private javax.swing.JToggleButton jBtoggleAutoRefresh;
     private javax.swing.JCheckBox jCbDontAsk;
-    private javax.swing.JLabel jFileNameHandler;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
-    private javax.swing.JProgressBar jProgressBar1;
-    private javax.swing.JLabel jProgressLabel;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTableQueue;

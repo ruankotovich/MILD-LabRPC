@@ -1,2 +1,0 @@
-labrpc.secondquestion.model.SizeHandle
-labrpc.secondquestion.model.AbstractFolder

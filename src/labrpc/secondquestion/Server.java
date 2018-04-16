@@ -77,75 +77,12 @@ public class Server {
             DataOutputStream outputStream;
             String inp;
             JSONObject object;
-            ProgressListener progressListener;
 
             try {
 
                 boolean toBeContinued = true;
                 inputStream = new DataInputStream(chainedSocket.getInputStream());
                 outputStream = new DataOutputStream(chainedSocket.getOutputStream());
-
-                progressListener = new ProgressListener() {
-                    @Override
-                    public void notifyProgress(Object obj, int amount) {
-                        try {
-                            outputStream.writeUTF(new JSONObject()
-                                    .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
-                                    .put("parameters", new Object[]{"notifyProgress", obj, amount})
-                                    .toString());
-                        } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-
-                    @Override
-                    public void then(Object obj) {
-                        try {
-                            outputStream.writeUTF(new JSONObject()
-                                    .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
-                                    .put("parameters", new Object[]{"then", obj})
-                                    .toString());
-                        } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-
-                    @Override
-                    public void onStart(Object obj) {
-                        try {
-                            outputStream.writeUTF(new JSONObject()
-                                    .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
-                                    .put("parameters", new Object[]{"onStart", obj})
-                                    .toString());
-                        } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-
-                    @Override
-                    public void clear() {
-                        try {
-                            outputStream.writeUTF(new JSONObject()
-                                    .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
-                                    .put("parameters", new Object[]{"clear"})
-                                    .toString());
-                        } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-
-                    @Override
-                    public void dmaSend(Object obj, long size) {
-                        try {
-                            outputStream.writeUTF(new JSONObject()
-                                    .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
-                                    .put("parameters", new Object[]{"dmaSend", obj, size})
-                                    .toString());
-                        } catch (IOException ex) {
-                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-                };
 
                 do {
 
@@ -166,6 +103,68 @@ public class Server {
                                 switch (message) {
 
                                     case REQUEST_DOWNLOAD: {
+
+                                        ProgressListener progressListener = new ProgressListener() {
+                                            @Override
+                                            public void notifyProgress(Object obj, int amount) {
+                                                try {
+                                                    outputStream.writeUTF(new JSONObject()
+                                                            .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
+                                                            .put("parameters", new Object[]{"notifyProgress", obj, amount})
+                                                            .toString());
+                                                } catch (IOException ex) {
+                                                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                                }
+                                            }
+
+                                            @Override
+                                            public void then(Object obj) {
+                                                try {
+                                                    outputStream.writeUTF(new JSONObject()
+                                                            .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
+                                                            .put("parameters", new Object[]{"then", obj})
+                                                            .toString());
+                                                } catch (IOException ex) {
+                                                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onStart(Object obj) {
+                                                try {
+                                                    outputStream.writeUTF(new JSONObject()
+                                                            .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
+                                                            .put("parameters", new Object[]{"onStart", obj})
+                                                            .toString());
+                                                } catch (IOException ex) {
+                                                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                                }
+                                            }
+
+                                            @Override
+                                            public void clear() {
+                                                try {
+                                                    outputStream.writeUTF(new JSONObject()
+                                                            .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
+                                                            .put("parameters", new Object[]{"clear"})
+                                                            .toString());
+                                                } catch (IOException ex) {
+                                                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                                }
+                                            }
+
+                                            @Override
+                                            public void dmaSend(Object obj, long size) {
+                                                try {
+                                                    outputStream.writeUTF(new JSONObject()
+                                                            .put("command", MessageHandler.ConnectionMessage.PROGRESS.toString())
+                                                            .put("parameters", new Object[]{"dmaSend", obj, size})
+                                                            .toString());
+                                                } catch (IOException ex) {
+                                                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                                }
+                                            }
+                                        };
 
                                         System.out.println("\t --- Download request detected from client " + chainedSocket.getRemoteSocketAddress().toString());
 
@@ -218,6 +217,7 @@ public class Server {
                                             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                                         }
 
+                                        toBeContinued = false;
                                     }
                                     break;
 
