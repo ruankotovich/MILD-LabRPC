@@ -719,9 +719,9 @@ public class Client extends javax.swing.JFrame {
 
     private void jBaddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBaddActionPerformed
         if (jTableQueue.getRowCount() < 8) {
-            if (tableModel.getRowCount() > 0) {
-                addFiles();
-            }
+
+            addFiles();
+
         } else {
             JOptionPane.showMessageDialog(null, "Isn't possible to keep more than eight connections.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
@@ -732,7 +732,9 @@ public class Client extends javax.swing.JFrame {
     }//GEN-LAST:event_jBremoveActionPerformed
 
     private void jBdownloadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBdownloadActionPerformed
-        yieldDownloads();
+        if (tableModel.getRowCount() > 0) {
+            yieldDownloads();
+        }
     }//GEN-LAST:event_jBdownloadActionPerformed
 
     private void jBtoggleAutoRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtoggleAutoRefreshActionPerformed
