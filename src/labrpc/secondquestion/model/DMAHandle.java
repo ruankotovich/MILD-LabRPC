@@ -46,12 +46,14 @@ public class DMAHandle {
 
             @Override
             public void then(Object obj) {
-                action = "Finished!";
+                action = obj.toString();
+                model.setValueAt(action, index, 2);
             }
 
             @Override
             public void onStart(Object obj) {
                 action = obj.toString();
+                model.setValueAt(action, index, 2);
             }
 
             @Override
