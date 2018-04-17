@@ -108,7 +108,7 @@ public class Client extends javax.swing.JFrame {
     private void jBcalculateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBcalculateActionPerformed
         if (validateInput()) {
             try {
-                Socket socket = new Socket("localhost", 6464);
+                Socket socket = new Socket("192.168.43.102", 6464);
 
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());

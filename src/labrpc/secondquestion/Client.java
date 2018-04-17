@@ -263,7 +263,7 @@ public class Client extends javax.swing.JFrame {
                         } while (command == null ? MessageHandler.ConnectionMessage.OVER.toString() != null : !command.equals(MessageHandler.ConnectionMessage.OVER.toString()));
                         
                     } catch (IOException ex) {
-                        Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                        System.err.println("Lost Package, recovering");
                     }
                     
                     tryUnlock();

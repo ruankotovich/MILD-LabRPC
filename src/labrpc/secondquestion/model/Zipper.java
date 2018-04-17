@@ -63,6 +63,11 @@ public class Zipper {
         this.progress = progress;
     }
 
+    /**
+     * Adaptado de
+     * https://github.com/graphhopper/graphhopper/blob/master/core/src/main/java/com/graphhopper/util/Unzipper.java
+     
+     */
     public static void unzip(File fileZip, File baseDirectory, ProgressListener progress) throws FileNotFoundException, IOException {
         byte[] buffer = new byte[4096];
         progress.onStart("Extracting received file...");
@@ -92,6 +97,11 @@ public class Zipper {
         zis.closeEntry();
     }
 
+    /**
+     * Adaptado de
+     * https://github.com/Transkribus/TranskribusCore/blob/master/src/main/java/eu/transkribus/core/util/ZipUtils.java
+     * Adaptações : Listener de progresso e buffer
+     */
     private boolean zip(String zipFile) {
         boolean successfull = false;
         byte[] buffer = new byte[1024];
