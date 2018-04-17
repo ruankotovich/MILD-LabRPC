@@ -150,57 +150,7 @@ public class Client extends javax.swing.JFrame {
                 }
             }
         });
-
-//        pListener = new ProgressListener() {
-//            @Override
-//            public void notifyProgress(Object obj, int amount) {
-//                jProgressBar1.setValue(amount);
-//                jFileNameHandler.setText(obj.toString());
-//            }
-//
-//            @Override
-//            public void then(Object obj) {
-//                jProgressLabel.setText(obj.toString());
-//                jFileNameHandler.setText("");
-//            }
-//
-//            @Override
-//            public void onStart(Object obj) {
-//                jProgressLabel.setText(obj.toString());
-//                jFileNameHandler.setText("Precaching...");
-//            }
-//
-//            @Override
-//            public void clear() {
-//                jProgressBar1.setValue(0);
-//                jFileNameHandler.setText("");
-//                jProgressLabel.setText("");
-//            }
-//
-//            @Override
-//            public void dmaSend(Object obj, long length) {
-//                try {
-//                    File file = new File(FILE_RECEIVED_RAW.getAbsolutePath() + "/" + obj.toString());
-//                    FileOutputStream fOutputStream = new FileOutputStream(file.getAbsoluteFile());
-//                    byte[] buffer = new byte[BLOCK_SIZE];
-//                    pListener.onStart("Receiving file...");
-//                    for (int curLength, accumulator = 0; accumulator < length; fOutputStream.write(buffer, 0, curLength)) {
-//                        pListener.notifyProgress("Receiving parts from " + accumulator + " to " + length, (int) ((accumulator / (float) length) * 100));
-//                        accumulator += (curLength = socketHandle.getDataInputStream().read(buffer));
-//                    }
-//
-//                    pListener.then("File received.");
-//
-//                    fOutputStream.close();
-//                    Zipper.unzip(file, FILE_RECEIVED_VIRTUAL, pListener);
-//
-//                } catch (FileNotFoundException ex) {
-//                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-//                } catch (IOException ex) {
-//                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-//                }
-//            }
-//        };
+        
         this.setLocationRelativeTo(null);
         
         try {
@@ -319,119 +269,12 @@ public class Client extends javax.swing.JFrame {
                     tryUnlock();
                 }).start();
 
-//                socketHandle.getDataOutputStream().writeUTF(requisition.toString());
             } catch (IOException ex) {
                 Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
 
-    /*
-    private void downloadSelectedFiles() throws IOException {
-        jBdownload.setEnabled(false);
-        jBadd.setEnabled(false);
-        jBremove.setEnabled(false);
-        jBforceRefresh.setEnabled(false);
-        jBtoggleAutoRefresh.setEnabled(false);
-        jTableQueue.setEnabled(false);
-
-        JSONObject requisition = new JSONObject();
-        requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
-
-        JSONArray jsonArray = new JSONArray();
-
-        int i = jTableQueue.getSelectedRow();
-
-        if (i < 0) {
-            if (jTableQueue.getRowCount() > 0) {
-                i = 0;
-            } else {
-                JOptionPane.showMessageDialog(null, "There's nothing to download yet.", "Erro", JOptionPane.ERROR_MESSAGE);
-                jBdownload.setEnabled(true);
-                jBadd.setEnabled(true);
-                jBremove.setEnabled(true);
-                jBforceRefresh.setEnabled(true);
-                jBtoggleAutoRefresh.setEnabled(true);
-                jTableQueue.setEnabled(true);
-                return;
-            }
-        }
-
-        final int toRemove = i;
-
-        String fileName = (String) tableModel.getValueAt(i, 0);
-        String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
-
-        JSONObject jsonObjectInner = new JSONObject()
-                .put("fileName", fileName)
-                .put("fileOutputAlias", fileOutputAlias);
-        jsonArray.put(jsonObjectInner);
-
-        requisition.put("parameters", jsonArray);
-        socketHandle.getDataOutputStream().writeUTF(requisition.toString());
-
-        new Thread(() -> {
-
-            try {
-                String command;
-                do {
-
-                    JSONObject jsonObject = new JSONObject(socketHandle.getDataInputStream().readUTF());
-
-                    if (jsonObject.has("command") && jsonObject.has("parameters")) {
-                        JSONArray parameters = jsonObject.getJSONArray("parameters");
-                        command = jsonObject.getString("command");
-
-                        if (parameters.length() > 0) {
-                            switch (parameters.getString(0)) {
-                                case "notifyProgress": {
-                                    pListener.notifyProgress(parameters.getString(1), parameters.getInt(2));
-                                }
-                                break;
-                                case "then": {
-                                    pListener.then(parameters.getString(1));
-                                }
-                                break;
-                                case "onStart": {
-                                    pListener.onStart(parameters.getString(1));
-                                }
-                                break;
-
-                                case "clear": {
-                                    pListener.clear();
-                                }
-                                break;
-
-                                case "dmaSend": {
-                                    pListener.dmaSend(parameters.getString(1), parameters.getLong(2));
-                                }
-                                break;
-                            }
-                        }
-
-                    } else {
-                        break;
-                    }
-
-                } while (command == null ? MessageHandler.ConnectionMessage.OVER.toString() != null : !command.equals(MessageHandler.ConnectionMessage.OVER.toString()));
-
-            } catch (IOException ex) {
-                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            jBdownload.setEnabled(true);
-            jBadd.setEnabled(true);
-            jBremove.setEnabled(true);
-            jBforceRefresh.setEnabled(true);
-            jBtoggleAutoRefresh.setEnabled(true);
-            jTableQueue.setEnabled(true);
-            tableModel.removeRow(toRemove);
-            jTableQueue.clearSelection();
-
-        }).start();
-
-    }
-     */
     private void addFiles() {
         TreePath paths[] = jTree1.getSelectionModel().getSelectionPaths();
         
@@ -612,7 +455,7 @@ public class Client extends javax.swing.JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 781, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 769, Short.MAX_VALUE)
             .addComponent(jBdownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
@@ -689,7 +532,6 @@ public class Client extends javax.swing.JFrame {
 
         jLbCuelo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLbCuelo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/cuelo.png"))); // NOI18N
-        jPanel4.add(jLbCuelo);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -699,7 +541,9 @@ public class Client extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 299, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLbCuelo, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
@@ -711,7 +555,10 @@ public class Client extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 473, Short.MAX_VALUE)
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLbCuelo, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
         );
 
