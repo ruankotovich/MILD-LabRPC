@@ -10,6 +10,7 @@ import labrpc.secondquestion.model.AbstractFolder;
 import labrpc.secondquestion.model.ProgressListener;
 import labrpc.secondquestion.model.PennyroyalPair;
 import java.awt.Color;
+import java.awt.EventQueue;
 import java.beans.PropertyChangeEvent;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -48,10 +49,10 @@ import org.json.JSONObject;
  * @author dmitry
  */
 public class Client extends javax.swing.JFrame {
-
+    
     private Icon OPENED_FOLDER_ICON, CLOSED_FOLDER_ICON;
     private DefaultMutableTreeNode root;
-
+    
     private final DefaultTreeModel treeModel;
     private final DefaultTreeCellRenderer renderer;
 //    private final ProgressListener pListener;
@@ -65,10 +66,11 @@ public class Client extends javax.swing.JFrame {
     private final File FILE_RECEIVED_RAW = new File("received/raw");
     private final File FILE_RECEIVED_VIRTUAL = new File("received/virtual");
     private final Color AUTO_REFRESH_BACKGROUND_COLOR;
-
+    private ImageIcon cueloStand, cueloRunning;
+    
     private String beforeEditValue;
     private SocketHandle socketHandle;
-
+    
     public Client() {
         initComponents();
         
@@ -80,7 +82,7 @@ public class Client extends javax.swing.JFrame {
                     stringBuffer.append(bufferedReader.readLine());
                 }
                 JSONObject jsonObject = new JSONObject(stringBuffer.toString());
-
+                
                 if (jsonObject.has("server")) {
                     JSONObject serverConfig = jsonObject.getJSONObject("server");
                     SERVER_ADDRESS = serverConfig.getString("ip");
@@ -94,39 +96,41 @@ public class Client extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(null, "Configuration file couldn't be readen, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
-
+        
         FILE_RECEIVED_RAW.mkdirs();
         FILE_RECEIVED_VIRTUAL.mkdir();
-
+        
         try {
             this.socketHandle = new SocketHandle(SERVER_ADDRESS, SERVER_PORT);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(null, "Conection Refused!\n" + ex.toString() + "\n\nMake sure the server is open", "Erro", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         }
-
+        
         try {
             OPENED_FOLDER_ICON = new ImageIcon(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/opened.png").openStream()).getScaledInstance(16, 16, 0));
             CLOSED_FOLDER_ICON = new ImageIcon(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/closed.png").openStream()).getScaledInstance(16, 16, 0));
-           this.setIconImage(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/carrotida.png").openStream()));
-           this.setTitle("CarroTIDA :: Client");
+            cueloRunning = new ImageIcon(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/cuelo.gif").openStream()));
+            cueloStand = new ImageIcon(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/cuelo.png").openStream()));
+            this.setIconImage(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/carrotida.png").openStream()));
+            this.setTitle("CarroTIDA :: Client");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
         folderMap = new TreeMap();
         choosenFileNames = new TreeSet<>();
-
+        
         renderer = (DefaultTreeCellRenderer) jTree1.getCellRenderer();
         treeModel = (DefaultTreeModel) jTree1.getModel();
         tableModel = (DefaultTableModel) jTableQueue.getModel();
-
+        
         renderer.setOpenIcon(OPENED_FOLDER_ICON);
         renderer.setClosedIcon(CLOSED_FOLDER_ICON);
         renderer.setLeafIcon(CLOSED_FOLDER_ICON);
-
+        
         AUTO_REFRESH_BACKGROUND_COLOR = jBtoggleAutoRefresh.getBackground();
-
+        
         jTableQueue.addPropertyChangeListener((PropertyChangeEvent e) -> {
             if ("tableCellEditor".equals(e.getPropertyName())) {
                 if (jTableQueue.isEditing()) {
@@ -135,14 +139,14 @@ public class Client extends javax.swing.JFrame {
                 } else {
                     String currentValue = tableModel.getValueAt(jTableQueue.getSelectedRow(), jTableQueue.getSelectedColumn()).toString();
                     System.out.println("Set to " + currentValue);
-
+                    
                     if (choosenFileNames.contains(currentValue) && !beforeEditValue.equals(currentValue)) {
                         JOptionPane.showMessageDialog(null, "This filename has already been choosen.", "Error", JOptionPane.ERROR_MESSAGE);
                         jTableQueue.setValueAt(beforeEditValue, jTableQueue.getSelectedRow(), jTableQueue.getSelectedColumn());
                     } else {
                         choosenFileNames.add(currentValue);
                     }
-
+                    
                 }
             }
         });
@@ -198,7 +202,7 @@ public class Client extends javax.swing.JFrame {
 //            }
 //        };
         this.setLocationRelativeTo(null);
-
+        
         try {
             listRemoteFolder();
         } catch (IOException ex) {
@@ -206,20 +210,20 @@ public class Client extends javax.swing.JFrame {
             System.exit(0);
         }
     }
-
+    
     private void listRemoteFolder() throws IOException {
         ((AbstractFolder) root.getUserObject()).setCanonicalName(SERVER_ADDRESS + ":" + SERVER_PORT).setCanonicalPath(SERVER_VIRTUAL_DRIVE_NAME);
         root.removeAllChildren();
         treeModel.nodeChanged(root);
-
+        
         socketHandle.getDataOutputStream().writeUTF(new JSONObject().put("command", MessageHandler.ConnectionMessage.REQUEST_LIST.toString()).toString());
         populateTree(socketHandle.getDataInputStream().readUTF());
-
+        
         treeModel.reload();
     }
-
+    
     int unlockCount = 0;
-
+    
     private synchronized void tryUnlock() {
         --unlockCount;
         if (unlockCount <= 0) {
@@ -229,9 +233,11 @@ public class Client extends javax.swing.JFrame {
             jBforceRefresh.setEnabled(true);
             jBtoggleAutoRefresh.setEnabled(true);
             tableModel.setRowCount(0);
+            folderMap.clear();
+            choosenFileNames.clear();
         }
     }
-
+    
     private void yieldDownloads() {
         jBdownload.setEnabled(false);
         jBadd.setEnabled(false);
@@ -242,37 +248,37 @@ public class Client extends javax.swing.JFrame {
 
         for (int i = 0; i < tableModel.getRowCount(); ++i) {
             try {
-
+                
                 DMAHandle dmaHandle = new DMAHandle(new SocketHandle(SERVER_ADDRESS, SERVER_PORT), i, tableModel, FILE_RECEIVED_RAW, FILE_RECEIVED_VIRTUAL, BLOCK_SIZE);
                 JSONObject requisition = new JSONObject();
                 requisition.put("command", MessageHandler.ConnectionMessage.REQUEST_DOWNLOAD.toString());
-
+                
                 JSONArray jsonArray = new JSONArray();
-
+                
                 String fileName = (String) tableModel.getValueAt(i, 0);
                 String fileOutputAlias = (String) tableModel.getValueAt(i, 1);
-
+                
                 JSONObject jsonObjectInner = new JSONObject()
                         .put("fileName", fileName)
                         .put("fileOutputAlias", fileOutputAlias);
                 jsonArray.put(jsonObjectInner);
-
+                
                 requisition.put("parameters", jsonArray);
-
+                
                 dmaHandle.getSocket().getDataOutputStream().writeUTF(requisition.toString());
-
+                
                 new Thread(() -> {
-
+                    
                     try {
                         String command;
                         do {
-
+                            
                             JSONObject jsonObject = new JSONObject(dmaHandle.getSocket().getDataInputStream().readUTF());
-
+                            
                             if (jsonObject.has("command") && jsonObject.has("parameters")) {
                                 JSONArray parameters = jsonObject.getJSONArray("parameters");
                                 command = jsonObject.getString("command");
-
+                                
                                 if (parameters.length() > 0) {
                                     switch (parameters.getString(0)) {
                                         case "notifyProgress": {
@@ -287,29 +293,29 @@ public class Client extends javax.swing.JFrame {
                                             dmaHandle.getListener().onStart(parameters.getString(1));
                                         }
                                         break;
-
+                                        
                                         case "clear": {
                                             dmaHandle.getListener().clear();
                                         }
                                         break;
-
+                                        
                                         case "dmaSend": {
                                             dmaHandle.getListener().dmaSend(parameters.getString(1), parameters.getLong(2));
                                         }
                                         break;
                                     }
                                 }
-
+                                
                             } else {
                                 break;
                             }
-
+                            
                         } while (command == null ? MessageHandler.ConnectionMessage.OVER.toString() != null : !command.equals(MessageHandler.ConnectionMessage.OVER.toString()));
-
+                        
                     } catch (IOException ex) {
                         Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                     }
-
+                    
                     tryUnlock();
                 }).start();
 
@@ -428,73 +434,73 @@ public class Client extends javax.swing.JFrame {
      */
     private void addFiles() {
         TreePath paths[] = jTree1.getSelectionModel().getSelectionPaths();
-
+        
         for (TreePath path : paths) {
             AbstractFolder curFolder = (AbstractFolder) ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
             String fileName = folderMap.get(curFolder.getCanonicalPath());
-
+            
             if (fileName == null) {
-
+                
                 String curFolderName = curFolder.getCanonicalName();
                 String baseName = curFolderName;
-
+                
                 while (choosenFileNames.contains(curFolderName)) {
                     curFolderName = baseName + String.format("_%h", new Random().nextInt(100));
                 }
-
+                
                 choosenFileNames.add(curFolderName);
                 folderMap.put(curFolder.getCanonicalPath(), curFolderName);
                 tableModel.addRow(new String[]{curFolder.getCanonicalPath(), curFolderName});
             }
         }
     }
-
+    
     private void erodeFiles() {
         int index = jTableQueue.getSelectedRow();
-
+        
         if (index < 0) {
             return;
         }
-
+        
         String deletedFolderEntryName = (String) tableModel.getValueAt(index, 0);
         String deletedOutputEntryName = (String) tableModel.getValueAt(index, 1);
-
+        
         int response;
-
+        
         if (!jCbDontAsk.isSelected()) {
             response = JOptionPane.showConfirmDialog(null, "Are you sure you wanna delete this entry?\n{" + deletedFolderEntryName + " <> " + deletedOutputEntryName + "}", "Confirmation", JOptionPane.YES_NO_OPTION);
         } else {
             response = JOptionPane.YES_OPTION;
         }
-
+        
         if (response == JOptionPane.YES_OPTION) {
-
+            
             folderMap.remove(deletedFolderEntryName);
             choosenFileNames.remove(deletedOutputEntryName);
-
+            
             tableModel.removeRow(index);
         }
-
+        
     }
-
+    
     private void populateTree(String jsonInput) {
         JSONArray currentChildren;
         Queue<PennyroyalPair<JSONObject, DefaultMutableTreeNode>> toInvestigate = new LinkedList<>();
-
+        
         root.removeAllChildren();
-
+        
         toInvestigate.add(new PennyroyalPair<>(new JSONObject(jsonInput), root));
         while (!toInvestigate.isEmpty()) {
             PennyroyalPair<JSONObject, DefaultMutableTreeNode> currentObject = toInvestigate.poll();
-
+            
             if (currentObject == null) {
                 continue;
             }
-
+            
             if (currentObject.first.has("children")) {
-
+                
                 currentChildren = currentObject.first.getJSONArray("children");
-
+                
                 for (int i = 0; i < currentChildren.length(); ++i) {
                     JSONObject curChild = currentChildren.getJSONObject(i);
                     String curChildName = curChild.getString("name");
@@ -503,12 +509,12 @@ public class Client extends javax.swing.JFrame {
                             curChildParentPath + "/" + curChildName,
                             curChildName
                     ));
-
+                    
                     currentObject.second.add(curChildNode);
                     toInvestigate.add(new PennyroyalPair<>(curChild, curChildNode));
                 }
             }
-
+            
             treeModel.nodeChanged(currentObject.second);
         }
     }
@@ -536,7 +542,7 @@ public class Client extends javax.swing.JFrame {
         jPanel5 = new javax.swing.JPanel();
         jBtoggleAutoRefresh = new javax.swing.JToggleButton();
         jBforceRefresh = new javax.swing.JButton();
-        jLabel1 = new javax.swing.JLabel();
+        jLbCuelo = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -681,9 +687,9 @@ public class Client extends javax.swing.JFrame {
 
         jPanel4.add(jPanel5);
 
-        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/cuelo.png"))); // NOI18N
-        jPanel4.add(jLabel1);
+        jLbCuelo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLbCuelo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/labrpc/secondquestion/gfx/cuelo.png"))); // NOI18N
+        jPanel4.add(jLbCuelo);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -725,9 +731,7 @@ public class Client extends javax.swing.JFrame {
 
     private void jBaddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBaddActionPerformed
         if (jTableQueue.getRowCount() < 8) {
-
             addFiles();
-
         } else {
             JOptionPane.showMessageDialog(null, "Isn't possible to keep more than eight connections.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
@@ -808,7 +812,7 @@ public class Client extends javax.swing.JFrame {
     private javax.swing.JButton jBremove;
     private javax.swing.JToggleButton jBtoggleAutoRefresh;
     private javax.swing.JCheckBox jCbDontAsk;
-    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLbCuelo;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
