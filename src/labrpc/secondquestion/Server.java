@@ -38,7 +38,7 @@ public class Server {
     public static final String DEFAULT_DRIVE_LOCATION = "/home/dmitry/Tests";
     public static final String DEFAULT_DRIVE_NAME = "virtual://root";
     public static final int DEFAULT_PORT = 6464;
-    
+
     private volatile ServerSocket abstractSocket;
     private final Thread eventLoop;
     private boolean serverOpen = false;
@@ -52,7 +52,7 @@ public class Server {
         this.SERVER_VIRTUAL_DRIVE_LOCATION = pSERVER_VIRTUAL_DRIVE_LOCATION;
         this.SERVER_VIRTUAL_DRIVE_NAME = pSERVER_VIRTUAL_DRIVE_NAME;
         this.SERVER_PORT = pSERVER_PORT;
-
+        System.out.println("CarroTIDA Server started on port " + SERVER_PORT);
         eventLoop = new Thread(() -> {
             while (isServerOpen()) {
                 try {
@@ -340,30 +340,30 @@ public class Server {
         String driveLocation = DEFAULT_DRIVE_LOCATION;
         String driveName = DEFAULT_DRIVE_NAME;
         int port = DEFAULT_PORT;
-        
-        try {
-                BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("server_config.json")));
-                StringBuilder stringBuffer = new StringBuilder();
-                while (bufferedReader.ready()) {
-                    stringBuffer.append(bufferedReader.readLine());
-                }
-                JSONObject jsonObject = new JSONObject(stringBuffer.toString());
 
-                if (jsonObject.has("config")) {
-                    JSONObject serverConfig = jsonObject.getJSONObject("config");
-                    
-                    driveLocation = serverConfig.getString("drive_location");
-                    driveName = serverConfig.getString("drive_name");
-                    port = serverConfig.getInt("port");
-                } else {
-                    JOptionPane.showMessageDialog(null, "Invalid configuration file.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (FileNotFoundException ex) {
-                JOptionPane.showMessageDialog(null, "Configuration file not found, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Configuration file couldn't be read, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("server_config.json")));
+            StringBuilder stringBuffer = new StringBuilder();
+            while (bufferedReader.ready()) {
+                stringBuffer.append(bufferedReader.readLine());
             }
-        
+            JSONObject jsonObject = new JSONObject(stringBuffer.toString());
+
+            if (jsonObject.has("config")) {
+                JSONObject serverConfig = jsonObject.getJSONObject("config");
+
+                driveLocation = serverConfig.getString("drive_location");
+                driveName = serverConfig.getString("drive_name");
+                port = serverConfig.getInt("port");
+            } else {
+                JOptionPane.showMessageDialog(null, "Invalid configuration file.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (FileNotFoundException ex) {
+            JOptionPane.showMessageDialog(null, "Configuration file not found, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(null, "Configuration file couldn't be read, using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
         new Server(driveLocation, driveName, port).start();
     }
 }

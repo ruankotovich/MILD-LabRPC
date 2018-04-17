@@ -71,6 +71,7 @@ public class Client extends javax.swing.JFrame {
 
     public Client() {
         initComponents();
+        
         {
             try {
                 BufferedReader bufferedReader = new BufferedReader(new FileReader(new File("client_config.json")));
@@ -107,6 +108,8 @@ public class Client extends javax.swing.JFrame {
         try {
             OPENED_FOLDER_ICON = new ImageIcon(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/opened.png").openStream()).getScaledInstance(16, 16, 0));
             CLOSED_FOLDER_ICON = new ImageIcon(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/closed.png").openStream()).getScaledInstance(16, 16, 0));
+           this.setIconImage(ImageIO.read(Client.class.getResource("/labrpc/secondquestion/gfx/carrotida.png").openStream()));
+           this.setTitle("CarroTIDA :: Client");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
